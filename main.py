@@ -1,3 +1,9 @@
+# This is a sample Python script.
+
+# Press Shift+F10 to execute it or replace it with your code.
+# Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
+
+
 # Press ⌃R to execute it or replace it with your code.
 # Press shift, option, E to execute highlighted code.
 # Press Double ⇧ to search everywhere for classes, files, tool windows, actions, and settings.
@@ -114,12 +120,14 @@ from google.oauth2 import service_account
 import os
 from google.cloud import storage
 
-# Instantiates a client to GCS
+# Instantiates a client to GCS using service account key 'JSON' file
 os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = 'landnerds-cloud-storage.json'
 client = storage.Client()
 bucket_name = 'landnerds/backup_daily_scrape'
 # Set the name of the BigQuery dataset and table you want to read
 dataset_name = 'landnerds.propertysourcer_dailyhouseprices'
+#Filepath to save files locally to
+local_filepath = 'C:/Users/zaine/Desktop/Output'
 
 # Set up your GCP project and service account credentials (downloaded as a JSON from 'service accounts' on GCP)
 credentials = service_account.Credentials.from_service_account_file('landnerds-gbq.json')
@@ -133,8 +141,8 @@ client = bigquery.Client(credentials=credentials,project=project_id)
 df_schema = pd.read_excel('information_schema.xlsx')
 
 # We only want tables up until 20200919, beyond this the data types are correct
-year = 2020
-tables = df_schema['table_name'].loc[(df_schema['table_name'] > 20191231) & (df_schema['table_name'] <= 20201231)]
+year = 2019
+tables = df_schema['table_name'].loc[(df_schema['table_name'] > 20181231) & (df_schema['table_name'] <= 20191231)]
 tables = tables.values.tolist()
 print(tables)
 print(len(tables))
@@ -144,18 +152,15 @@ df = pd_gbq.read_gbq(f'{dataset_name}.{tables[0]}', project_id=f'{project_id}')
 df['date'] = ''
 
 
-# Reorder the column names of df to ensure alignment
+# create a new blank column if it doesn't exist - this is to ensure all dfs have a standardised format
 if 'listing_id' not in df:
     df['listing_id']=''
 
+# Reorder the column names of df to ensure alignment
 df= df[['acorn_type', 'property_type', 'num_baths', 'num_recepts', 'num_beds', 'postcode', 'postcode_district', 'outcode',
      'display_address', 'listing_id', 'listing_condition', 'url', 'price', 'date']]
 
-df.head(0).to_csv(f'/Users/zaineisa/Desktop/{year}.csv', index=False)
-
-# Rename the columns in accordance with the reordered columns
-# df = df.rename(columns={"property_type": "acorn_type", "num_baths": "property_type", "postcode_district": "num_baths","num_recepts": "num_recepts", "num_beds": "num_beds", "postcode": "postcode","outcode": "postcode_district", "acorn_type": "outcode", "display_address": "display_address","price": "listing_id", "listing_id": "listing_condition", "url": "url","listing_condition": "price", "date": "date"}, inplace=True)
-
+df.head(0).to_csv(f'{local_filepath}/{year}.csv', index=False)
 
 # Loop through the list of tables
 for table in tables:
@@ -184,19 +189,29 @@ for table in tables:
     df_loop = df_loop[['acorn_type','property_type','num_baths','num_recepts','num_beds','postcode','postcode_district','outcode','display_address','listing_id','listing_condition','url','price','date']]
 
     # Save locally as csv - appending one table onto another
-    df_local = df_loop.to_csv(f'/Users/zaineisa/Desktop/{year}.csv', mode='a', header=False, index=False)
+    df_local = df_loop.to_csv(f'{local_filepath}/{year}.csv', mode='a', header=False, index=False)
 
-# Data quality issues need to be resolved (i.e. strings within the price field)
 
-# Save to csv on GCS
-df = pd.read_csv(f'/Users/zaineisa/Desktop/{year}.csv')
+# Now the df column price needs cleaning
+df = pd.read_csv(f'{local_filepath}/{year}.csv')
+# Fill the blanks with 0
+df['price'] = df['price'].fillna(0)
+# Replace text to leave the price with only numbers
+df['price'] = df['price'].replace('[^0-9.]', '', regex=True)
+df['price'] = pd.to_numeric(df['price'], errors='coerce')
+# Save file temporarily
+df.to_csv(f'{local_filepath}/{year}_clean.csv', index=False)
+
+# Save to csv on GCS (requires python package 'gcfs')
+df = pd.read_csv(f'{local_filepath}/{year}_clean.csv')
 df.to_csv(f'gs://{bucket_name}/{year}.csv',mode='a',header= False, index=False)
 
-# Print df and describe to double check..
+# Print df and describe to double-check..
 df = pd.read_csv(f'gs://{bucket_name}/{year}.csv')
 print(f'table shape is {df.shape}. It has been successfully uploaded to gcs.')
 
-# Delete file locally
-os.remove(f'/Users/zaineisa/Desktop/{year}.csv')
+# Delete files locally
+os.remove(f'{local_filepath}/{year}.csv')
+os.remove(f'{local_filepath}/{year}_clean.csv')
 
 
