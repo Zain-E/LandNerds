@@ -214,4 +214,42 @@ print(f'table shape is {df.shape}. It has been successfully uploaded to gcs.')
 os.remove(f'{local_filepath}/{year}.csv')
 os.remove(f'{local_filepath}/{year}_clean.csv')
 
+# ============================================ LIST OF TABLE NAMES IN GBQ ==============================================
 
+import pandas as pd
+import pandas_gbq as pd_gbq
+from google.cloud import bigquery
+from google.oauth2 import service_account
+import os
+from google.cloud import storage
+
+# Instantiates a client to GCS using service account key 'JSON' file
+os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = 'landnerds-cloud-storage.json'
+client = storage.Client()
+bucket_name = 'landnerds/backup_daily_scrape'
+# Set the name of the BigQuery dataset and table you want to read + project ID
+project_id = 'landnerds'
+dataset_name = 'propertysourcer_dailyhouseprices'
+#Filepath to save files locally to
+local_filepath = 'C:/Users/zaine/Desktop/Output'
+year = '2021'
+
+# Set up your GCP project and service account credentials (downloaded as a JSON from 'service accounts' on GCP)
+credentials = service_account.Credentials.from_service_account_file('landnerds-gbq.json')
+
+
+# Connect to the right project id and client
+client = bigquery.Client(credentials=credentials,project=project_id)
+
+
+# Get a list of all tables in the dataset
+table_list = [table.table_id for table in client.list_tables(f"{project_id}.{dataset_name}")]
+
+# Filter the table list to only include tables that start with '2019'
+table_list_2019 = [table for table in table_list if table.startswith(f'{year}')]
+
+# Convert the list of table names to a pandas DataFrame
+df = pd.DataFrame(table_list_2019, columns=['table_name'])
+
+# Print the resulting DataFrame
+print(df)
