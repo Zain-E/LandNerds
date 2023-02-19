@@ -127,7 +127,7 @@ bucket_name = 'landnerds/backup_daily_scrape'
 # Set the name of the BigQuery dataset and table you want to read
 dataset_name = 'landnerds.propertysourcer_dailyhouseprices'
 #Filepath to save files locally to
-local_filepath = 'C:/Users/zaine/Desktop/Output'
+local_filepath = 'C:/Users/zaine/Documents/Jobs\Data_Engineering/Projects/LandNerds/Output'
 
 # Set up your GCP project and service account credentials (downloaded as a JSON from 'service accounts' on GCP)
 credentials = service_account.Credentials.from_service_account_file('landnerds-gbq.json')
@@ -231,7 +231,7 @@ bucket_name = 'landnerds/backup_daily_scrape'
 project_id = 'landnerds'
 dataset_name = 'propertysourcer_dailyhouseprices'
 #Filepath to save files locally to
-local_filepath = 'C:/Users/zaine/Desktop/Output'
+local_filepath = 'C:/Users/zaine/Documents/Jobs\Data_Engineering/Projects/LandNerds/Output'
 year = '2021'
 
 # Set up your GCP project and service account credentials (downloaded as a JSON from 'service accounts' on GCP)
