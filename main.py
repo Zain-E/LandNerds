@@ -141,8 +141,8 @@ client = bigquery.Client(credentials=credentials,project=project_id)
 df_schema = pd.read_excel('information_schema.xlsx')
 
 # We only want tables up until 20200919, beyond this the data types are correct
-year = 2019
-tables = df_schema['table_name'].loc[(df_schema['table_name'] > 20181231) & (df_schema['table_name'] <= 20191231)]
+year = 2020
+tables = df_schema['table_name'].loc[(df_schema['table_name'] > 20191231) & (df_schema['table_name'] <= 20201231)]
 tables = tables.values.tolist()
 print(tables)
 print(len(tables))
@@ -170,6 +170,7 @@ for table in tables:
 
     # Add a new column with the date and append
     df_loop['date'] = table
+    df_loop['date'] = pd.to_datetime(df_loop['date'], format='%Y%m%d')
 
     # Reorder the columns of df_loop to ensure alignment
     # Please note, we have to create if statements to create df columns where none exist
